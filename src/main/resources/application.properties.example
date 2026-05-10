@@ -1,0 +1,11 @@
+spring.application.name=curamentis
+spring.data.mongodb.uri=${SPRING_DATA_MONGODB_URI}
+server.port=8081
+
+# Admin Settings
+admin.username=${ADMIN_USERNAME}
+admin.password=${ADMIN_PASSWORD}
+
+# JWT Configuration
+jwt.secret=${JWT_SECRET}
+jwt.expiration=86400000
