@@ -7,5 +7,6 @@ RUN ./gradlew build -x test
 # Package stage
 FROM eclipse-temurin:17-jre
 VOLUME /tmp
-COPY --from=build /home/gradle/src/build/libs/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+COPY --from=build /home/gradle/src/build/libs/app.jar app.jar
+ENTRYPOINT ["java", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xms128m", "-Xmx384m", "-jar", "/app.jar"]
+
