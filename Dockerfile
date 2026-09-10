@@ -8,5 +8,6 @@ RUN ./gradlew build -x test
 FROM eclipse-temurin:17-jre
 VOLUME /tmp
 COPY --from=build /home/gradle/src/build/libs/app.jar app.jar
-ENTRYPOINT ["java", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xms128m", "-Xmx384m", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-Dspring.main.lazy-initialization=true", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xms128m", "-Xmx384m", "-jar", "/app.jar"]
+
 
