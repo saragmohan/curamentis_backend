@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired(required = false)
+    @Autowired
     private JavaMailSender mailSender;
 
     @Value("${admin.notification.email:sarag.mohan@gmail.com}")
@@ -22,15 +22,21 @@ public class EmailService {
 
     @Async
     public void sendAppointmentNotification(Appointment appointment) {
-        if (mailSender == null || mailSenderAddress == null || mailSenderAddress.isBlank()) {
-            System.out.println("ℹ️ Email notification skipped: Spring Mail username/credentials not configured.");
+        String fromAddress = (mailSenderAddress != null && !mailSenderAddress.isBlank()) 
+                ? mailSenderAddress.trim() 
+                : notificationEmail.trim();
+
+        if (fromAddress == null || fromAddress.isBlank()) {
+            System.err.println("⚠️ Email notification skipped: SPRING_MAIL_USERNAME environment variable is not configured.");
             return;
         }
 
         try {
+            System.out.println("🔄 Preparing to send appointment notification email for patient: " + appointment.getName());
+            
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(mailSenderAddress);
-            message.setTo(notificationEmail);
+            message.setFrom(fromAddress);
+            message.setTo(notificationEmail.trim());
             message.setSubject("🚨 New Appointment Booking: " + appointment.getName());
             message.setText(
                 "Hello!\n\n" +
@@ -46,6 +52,7 @@ public class EmailService {
             System.out.println("📧 Appointment notification email sent successfully to " + notificationEmail);
         } catch (Exception e) {
             System.err.println("❌ Failed to send appointment notification email: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
