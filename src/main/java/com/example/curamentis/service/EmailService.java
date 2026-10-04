@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -14,28 +15,42 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    @Value("${admin.notification.email:sarag.mohan@gmail.com}")
-    private String notificationEmail;
+    @Value("${admin.notification.email:thecuramentis@gmail.com}")
+    private String notificationEmailProp;
 
-    @Value("${spring.mail.username:}")
-    private String mailSenderAddress;
+    @Value("${spring.mail.username:thecuramentis@gmail.com}")
+    private String mailSenderAddressProp;
 
     @Async
     public void sendAppointmentNotification(Appointment appointment) {
-        String fromAddress = (mailSenderAddress != null && !mailSenderAddress.isBlank()) 
-                ? mailSenderAddress.trim() 
-                : notificationEmail.trim();
+        String senderAddress = (mailSenderAddressProp != null && !mailSenderAddressProp.isBlank())
+                ? mailSenderAddressProp
+                : System.getenv("SPRING_MAIL_USERNAME");
 
-        if (fromAddress == null || fromAddress.isBlank()) {
-            System.err.println("⚠️ Email notification skipped: SPRING_MAIL_USERNAME environment variable is not configured.");
-            return;
+        if (senderAddress == null || senderAddress.isBlank()) {
+            senderAddress = "thecuramentis@gmail.com";
+        }
+
+        String notificationEmail = (notificationEmailProp != null && !notificationEmailProp.isBlank())
+                ? notificationEmailProp
+                : System.getenv("ADMIN_NOTIFICATION_EMAIL");
+
+        if (notificationEmail == null || notificationEmail.isBlank()) {
+            notificationEmail = "thecuramentis@gmail.com";
+        }
+
+        if (mailSender instanceof JavaMailSenderImpl impl) {
+            if (impl.getPassword() == null || impl.getPassword().isBlank()) {
+                System.err.println("⚠️ Email notification skipped: SPRING_MAIL_PASSWORD (16-character Gmail App Password) is not configured in environment variables.");
+                return;
+            }
         }
 
         try {
-            System.out.println("🔄 Preparing to send appointment notification email for patient: " + appointment.getName());
+            System.out.println("🔄 Sending appointment notification email for patient: " + appointment.getName() + " to " + notificationEmail);
             
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
+            message.setFrom(senderAddress.trim());
             message.setTo(notificationEmail.trim());
             message.setSubject("🚨 New Appointment Booking: " + appointment.getName());
             message.setText(
@@ -56,3 +71,4 @@ public class EmailService {
         }
     }
 }
+
