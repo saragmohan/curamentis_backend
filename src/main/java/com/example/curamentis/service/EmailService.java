@@ -9,6 +9,9 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class EmailService {
 
@@ -23,21 +26,8 @@ public class EmailService {
 
     @Async
     public void sendAppointmentNotification(Appointment appointment) {
-        String senderAddress = (mailSenderAddressProp != null && !mailSenderAddressProp.isBlank())
-                ? mailSenderAddressProp
-                : System.getenv("SPRING_MAIL_USERNAME");
-
-        if (senderAddress == null || senderAddress.isBlank()) {
-            senderAddress = "thecuramentis@gmail.com";
-        }
-
-        String notificationEmail = (notificationEmailProp != null && !notificationEmailProp.isBlank())
-                ? notificationEmailProp
-                : System.getenv("ADMIN_NOTIFICATION_EMAIL");
-
-        if (notificationEmail == null || notificationEmail.isBlank()) {
-            notificationEmail = "thecuramentis@gmail.com";
-        }
+        String senderAddress = getSenderAddress();
+        String notificationEmail = getNotificationEmail();
 
         if (mailSender instanceof JavaMailSenderImpl impl) {
             if (impl.getPassword() == null || impl.getPassword().isBlank()) {
@@ -70,5 +60,68 @@ public class EmailService {
             e.printStackTrace();
         }
     }
+
+    public Map<String, Object> sendTestEmail() {
+        Map<String, Object> result = new HashMap<>();
+
+        String senderAddress = getSenderAddress();
+        String notificationEmail = getNotificationEmail();
+
+        String password = null;
+        if (mailSender instanceof JavaMailSenderImpl impl) {
+            password = impl.getPassword();
+        }
+
+        result.put("senderAddress", senderAddress);
+        result.put("notificationEmail", notificationEmail);
+        result.put("passwordConfigured", password != null && !password.isBlank());
+
+        if (password == null || password.isBlank()) {
+            result.put("status", "ERROR");
+            result.put("error", "SPRING_MAIL_PASSWORD is not set or is empty in environment variables.");
+            return result;
+        }
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(senderAddress.trim());
+            message.setTo(notificationEmail.trim());
+            message.setSubject("🧪 Cura Mentis Test Email");
+            message.setText("This is a test notification email from Cura Mentis backend.");
+
+            mailSender.send(message);
+            result.put("status", "SUCCESS");
+            result.put("message", "Test email sent successfully to " + notificationEmail);
+        } catch (Exception e) {
+            result.put("status", "ERROR");
+            result.put("error", e.getMessage());
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    private String getSenderAddress() {
+        String senderAddress = (mailSenderAddressProp != null && !mailSenderAddressProp.isBlank())
+                ? mailSenderAddressProp
+                : System.getenv("SPRING_MAIL_USERNAME");
+
+        if (senderAddress == null || senderAddress.isBlank()) {
+            senderAddress = "thecuramentis@gmail.com";
+        }
+        return senderAddress;
+    }
+
+    private String getNotificationEmail() {
+        String notificationEmail = (notificationEmailProp != null && !notificationEmailProp.isBlank())
+                ? notificationEmailProp
+                : System.getenv("ADMIN_NOTIFICATION_EMAIL");
+
+        if (notificationEmail == null || notificationEmail.isBlank()) {
+            notificationEmail = "thecuramentis@gmail.com";
+        }
+        return notificationEmail;
+    }
 }
+
 
