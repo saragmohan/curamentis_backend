@@ -6,6 +6,7 @@ import com.example.curamentis.model.TimeSlotConfig;
 import com.example.curamentis.repository.AppointmentRepository;
 import com.example.curamentis.repository.BlockedSlotRepository;
 import com.example.curamentis.repository.TimeSlotConfigRepository;
+import com.example.curamentis.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,9 @@ public class AppointmentController {
     @Autowired
     private TimeSlotConfigRepository timeSlotConfigRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAppointments() {
         List<Appointment> appointments = appointmentRepository.findAll();
@@ -48,11 +52,16 @@ public class AppointmentController {
         }
         
         Appointment saved = appointmentRepository.save(appointment);
+
+        // Asynchronously send email notification to admin
+        emailService.sendAppointmentNotification(saved);
+
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("appointment", saved);
         return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/time-slots")
     public ResponseEntity<Map<String, Object>> getTimeSlots() {
